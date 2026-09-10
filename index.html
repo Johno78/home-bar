@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Home Bar — recipes &amp; shopping list</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Work+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#2B0A4A;
+    --bg:#3A0A66;
+    --bg-alt:#7A1FA6;
+    --bg2:#F0158A;
+    --panel:#5C189A;
+    --line: rgba(255,255,255,0.24);
+    --paper:#FFFFFF;
+    --paper-soft:#F6E3FF;
+    --copper:#FF2E88;
+    --copper-dark:#D6006E;
+    --citrus:#1FE6C2;
+    --rust:#FF5A36;
+    --cream:#FFF4FB;
+    --font-display: 'Fraunces', Georgia, serif;
+    --font-body: 'Work Sans', system-ui, -apple-system, sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html{-webkit-text-size-adjust:100%;}
+  body{
+    margin:0;
+    background:linear-gradient(165deg, var(--bg) 0%, var(--bg-alt) 55%, var(--bg2) 100%);
+    background-attachment:fixed;
+    color:var(--cream);
+    font-family:var(--font-body);
+    line-height:1.5;
+  }
+  a{color:inherit;}
+  button{font-family:inherit;}
+  ::selection{background:var(--copper); color:var(--ink);}
+
+  .site-header{
+    padding:28px 20px 18px;
+    background:linear-gradient(180deg, var(--bg-alt), var(--bg));
+    border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:20;
+    backdrop-filter:blur(6px);
+  }
+  .header-inner{
+    max-width:1100px; margin:0 auto;
+    display:flex; align-items:flex-start; gap:14px;
+  }
+  .brand-mark{flex:none; color:var(--copper); margin-top:2px;}
+  .brand h1{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:clamp(28px,4vw,36px);
+    margin:0 0 4px;
+    letter-spacing:0.2px;
+  }
+  .tagline{margin:0; color:var(--paper-soft); font-size:14.5px; max-width:56ch;}
+
+  .controls{max-width:1100px; margin:18px auto 0; display:flex; flex-direction:column; gap:12px;}
+  #searchInput{
+    width:100%;
+    padding:11px 14px;
+    border-radius:8px;
+    border:1px solid var(--line);
+    background:var(--panel);
+    color:var(--cream);
+    font-size:15px;
+  }
+  #searchInput::placeholder{color:rgba(243,239,228,0.45);}
+  #searchInput:focus-visible{outline:2px solid var(--copper); outline-offset:1px;}
+
+  .chip-row{display:flex; flex-wrap:wrap; gap:8px;}
+  .chip{
+    border:1px solid var(--line);
+    background:transparent;
+    color:var(--paper-soft);
+    padding:6px 13px;
+    border-radius:999px;
+    font-size:13.5px;
+    cursor:pointer;
+    transition:background .15s, color .15s, border-color .15s;
+  }
+  .chip:hover{border-color:var(--copper);}
+  .chip.active{background:var(--copper); border-color:var(--copper); color:var(--ink); font-weight:500;}
+  .chip.toggle.active{background:var(--citrus); border-color:var(--citrus); color:var(--ink);}
+  .chip:focus-visible{outline:2px solid var(--copper); outline-offset:2px;}
+
+  .layout{
+    max-width:1100px; margin:0 auto;
+    padding:24px 20px 60px;
+    display:grid;
+    grid-template-columns:1fr 320px;
+    gap:28px;
+    align-items:start;
+  }
+  .recipe-list{display:flex; flex-direction:column; gap:14px;}
+  .empty-state{
+    padding:40px 20px; text-align:center; color:var(--paper-soft);
+    border:1px dashed var(--line); border-radius:10px;
+  }
+
+  .ticket{
+    position:relative;
+    background:var(--paper);
+    color:var(--ink);
+    border-radius:8px;
+    box-shadow:0 1px 0 rgba(0,0,0,0.2);
+    border:1px solid rgba(22,35,26,0.08);
+  }
+  .fav-btn{
+    position:absolute; top:12px; right:12px;
+    width:32px; height:32px;
+    border:none; background:transparent; cursor:pointer;
+    color:var(--copper-dark);
+    display:flex; align-items:center; justify-content:center;
+    z-index:2; border-radius:6px;
+  }
+  .fav-btn:hover{background:rgba(193,122,62,0.12);}
+  .fav-btn:focus-visible{outline:2px solid var(--copper-dark); outline-offset:1px;}
+  .fav-btn svg{width:19px; height:19px;}
+  .fav-btn[aria-pressed="true"] svg{fill:var(--copper-dark);}
+  .fav-btn[aria-pressed="false"] svg{fill:none;}
+
+  details{padding:0;}
+  summary{
+    list-style:none;
+    cursor:pointer;
+    display:flex;
+    align-items:center;
+    gap:14px;
+    padding:16px 52px 16px 16px;
+  }
+  summary::-webkit-details-marker{display:none;}
+  summary::after{
+    content:"";
+    width:9px; height:9px;
+    border-right:2px solid var(--ink);
+    border-bottom:2px solid var(--ink);
+    transform:rotate(45deg);
+    transition:transform .18s ease;
+    margin-left:auto;
+    flex:none;
+    opacity:0.55;
+  }
+  details[open] summary::after{transform:rotate(-135deg);}
+  .glass-icon{flex:none; color:var(--copper-dark);}
+  .ticket-title{flex:1; min-width:0;}
+  .ticket-title h3{
+    font-family:var(--font-display);
+    font-weight:600;
+    font-size:19px;
+    margin:0 0 5px;
+  }
+  .ticket-tags{display:flex; flex-wrap:wrap; gap:6px;}
+  .tag{
+    font-size:11.5px;
+    padding:2px 8px;
+    border-radius:999px;
+    background:rgba(22,35,26,0.08);
+    color:var(--ink);
+    white-space:nowrap;
+  }
+  .tag.cat-gin{background:#A6E8FF;}
+  .tag.cat-vodka{background:#C9C3FF;}
+  .tag.cat-rum{background:#FFC98A;}
+  .tag.cat-whiskey{background:#FFAE94;}
+  .tag.cat-tequila{background:#FFF394;}
+  .tag.cat-other{background:#FFBEE0;}
+  .tag.cat-no-abv{background:#E3CFFF;}
+
+  .ready-badge{
+    flex:none;
+    font-size:12px;
+    font-weight:500;
+    padding:4px 10px;
+    border-radius:999px;
+    white-space:nowrap;
+  }
+  .ready-badge.ready{background:var(--citrus); color:var(--ink);}
+  .ready-badge.missing{background:transparent; color:var(--rust); border:1px solid var(--rust);}
+
+  .ticket-body{padding:0 18px 20px 52px;}
+  .ingredients{list-style:none; margin:0 0 16px; padding:0; display:flex; flex-direction:column; gap:9px;}
+  .ingredients li{display:flex; align-items:center; gap:10px; font-size:14.5px;}
+  .have-dot{
+    flex:none; width:8px; height:8px; border-radius:50%;
+    border:1.5px solid rgba(22,35,26,0.35);
+    background:transparent;
+  }
+  .ingredients li.have .have-dot{background:var(--citrus); border-color:var(--citrus);}
+  .ing-name{flex:1; min-width:0;}
+  .ing-qty{color:rgba(22,35,26,0.6); font-size:13.5px;}
+  .shop-link{
+    flex:none;
+    display:inline-flex; align-items:center; gap:5px;
+    font-size:12.5px; font-weight:500;
+    color:var(--copper-dark);
+    text-decoration:none;
+    border:1px solid var(--copper-dark);
+    padding:4px 10px;
+    border-radius:999px;
+    transition:background .15s, color .15s;
+  }
+  .shop-link:hover{background:var(--copper-dark); color:var(--paper);}
+  .shop-link svg{width:13px; height:13px;}
+
+  .method{margin:0 0 10px; padding-left:19px; display:flex; flex-direction:column; gap:6px; font-size:14.5px;}
+  .method li{padding-left:2px;}
+  .garnish{margin:0; font-size:13.5px; color:rgba(22,35,26,0.65); font-style:italic;}
+
+  .side-panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    position:sticky; top:150px;
+    overflow:hidden;
+  }
+  .tabs{display:flex; border-bottom:1px solid var(--line);}
+  .tab-btn{
+    flex:1;
+    padding:12px 10px;
+    background:transparent;
+    border:none;
+    color:var(--paper-soft);
+    font-size:13.5px;
+    cursor:pointer;
+    border-bottom:2px solid transparent;
+  }
+  .tab-btn.active{color:var(--cream); border-bottom-color:var(--copper);}
+  .tab-btn:focus-visible{outline:2px solid var(--copper); outline-offset:-2px;}
+  .tab-panel{padding:16px;}
+  .tab-panel.hidden{display:none;}
+  .panel-note{margin:0 0 12px; font-size:13px; color:var(--paper-soft);}
+
+  .pantry-list{list-style:none; margin:0 0 14px; padding:0; display:flex; flex-direction:column; gap:9px; max-height:340px; overflow:auto;}
+  .pantry-list li{display:flex; align-items:center; gap:9px; font-size:14px;}
+  .pantry-list input{accent-color:var(--copper); width:16px; height:16px; flex:none;}
+  .pantry-list label{display:flex; align-items:center; gap:9px; cursor:pointer; width:100%;}
+
+  .shopping-list{list-style:none; margin:0 0 14px; padding:0; display:flex; flex-direction:column; gap:8px; max-height:300px; overflow:auto;}
+  .shopping-list li{display:flex; align-items:center; justify-content:space-between; gap:8px; font-size:14px; padding-bottom:8px; border-bottom:1px solid var(--line);}
+  .shopping-list li:last-child{border-bottom:none;}
+
+  .btn{
+    width:100%;
+    padding:10px 14px;
+    background:var(--copper);
+    color:var(--ink);
+    border:none;
+    border-radius:7px;
+    font-size:14px;
+    font-weight:500;
+    cursor:pointer;
+  }
+  .btn:hover{background:var(--copper-dark);}
+  .btn:focus-visible{outline:2px solid var(--cream); outline-offset:2px;}
+  .text-btn{
+    background:none; border:none; color:var(--paper-soft);
+    font-size:13px; text-decoration:underline; cursor:pointer; padding:0;
+  }
+  .text-btn:hover{color:var(--cream);}
+
+  .site-footer{max-width:1100px; margin:0 auto; padding:0 20px 50px; color:rgba(243,239,228,0.5); font-size:12.5px;}
+
+  @media (max-width: 900px){
+    .layout{grid-template-columns:1fr; padding:20px 16px 50px;}
+    .side-panel{position:static; order:2;}
+    .recipe-list{order:1;}
+    .ticket-body{padding-left:18px;}
+    summary{padding-left:14px;}
+  }
+  @media (prefers-reduced-motion: reduce){
+    *{transition:none !important;}
+  }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <span class="brand-mark" aria-hidden="true">
+      <svg width="34" height="34" viewBox="0 0 28 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 6c0 6.5 4 11 9 11s9-4.5 9-11"/><line x1="14" y1="17" x2="14" y2="27"/><line x1="8" y1="29" x2="20" y2="29"/></svg>
+    </span>
+    <div class="brand">
+      <h1>Home Bar</h1>
+      <p class="tagline">Recipes, a pantry check, and a Tesco shopping list for whatever you're missing.</p>
+    </div>
+  </div>
+  <div class="controls">
+    <input type="search" id="searchInput" placeholder="Search a drink or ingredient…" aria-label="Search cocktails">
+    <div class="chip-row" id="modeChips">
+      <button class="chip mode-chip active" data-mode="single" aria-pressed="true">Single serves</button>
+      <button class="chip mode-chip" data-mode="party" aria-pressed="false">Party jars (5–10 litre)</button>
+    </div>
+    <div class="chip-row" id="jarChips" style="display:none;">
+      <button class="chip jar-chip active" data-jar="5" aria-pressed="true">5 litre jar</button>
+      <button class="chip jar-chip" data-jar="10" aria-pressed="false">10 litre jar</button>
+    </div>
+    <div class="chip-row" id="categoryChips"></div>
+    <div class="chip-row secondary">
+      <button class="chip toggle" id="readyChip" aria-pressed="false">Ready to make now</button>
+      <button class="chip toggle" id="favChip" aria-pressed="false">Favourites</button>
+    </div>
+  </div>
+</header>
+
+<main class="layout">
+  <section class="recipe-list" id="recipeList" aria-live="polite"></section>
+
+  <aside class="side-panel">
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="bar" id="tabBtnBar">Your bar</button>
+      <button class="tab-btn" data-tab="list" id="tabBtnList">Shopping list</button>
+    </div>
+    <div class="tab-panel" id="barPanel">
+      <p class="panel-note">Tick what's already in your cupboard — every recipe will show what's missing.</p>
+      <ul id="pantryList" class="pantry-list"></ul>
+      <button class="text-btn" id="resetPantry">Clear all</button>
+    </div>
+    <div class="tab-panel hidden" id="listPanel">
+      <p class="panel-note" id="listSource"></p>
+      <ul id="shoppingList" class="shopping-list"></ul>
+      <button class="btn" id="copyListBtn">Copy list</button>
+    </div>
+  </aside>
+</main>
+
+<footer class="site-footer">
+  <p>Quantities are guides — adjust to taste. Ingredient links open Tesco's grocery search so you can check pack size, price and what's on offer.</p>
+</footer>
+
+<script>
+(function(){
+
+  // ---------- ingredient reference (shared across recipes) ----------
+  const ING = {
+    'gin': {product:'Gin', tesco:'gin'},
+    'tonic-water': {product:'Tonic water', tesco:'tonic water'},
+    'lime': {product:'Limes', tesco:'limes'},
+    'campari': {product:'Campari', tesco:'campari'},
+    'sweet-vermouth': {product:'Sweet vermouth', tesco:'sweet vermouth'},
+    'orange': {product:'Oranges', tesco:'oranges'},
+    'lemon': {product:'Lemons', tesco:'lemons'},
+    'sugar': {product:'Caster sugar', tesco:'caster sugar'},
+    'soda-water': {product:'Soda water', tesco:'soda water'},
+    'lime-cordial': {product:'Lime cordial', tesco:'lime cordial'},
+    'vodka': {product:'Vodka', tesco:'vodka'},
+    'dry-vermouth': {product:'Dry vermouth', tesco:'dry vermouth'},
+    'cocktail-olives': {product:'Cocktail olives', tesco:'cocktail olives'},
+    'ginger-beer': {product:'Ginger beer', tesco:'ginger beer'},
+    'triple-sec': {product:'Triple sec', tesco:'triple sec'},
+    'cranberry-juice': {product:'Cranberry juice', tesco:'cranberry juice'},
+    'white-rum': {product:'White rum', tesco:'white rum'},
+    'mint': {product:'Fresh mint', tesco:'fresh mint'},
+    'dark-rum': {product:'Dark rum', tesco:'dark rum'},
+    'bourbon': {product:'Bourbon whiskey', tesco:'bourbon whiskey'},
+    'sugar-cubes': {product:'Sugar cubes', tesco:'sugar cubes'},
+    'angostura-bitters': {product:'Angostura bitters', tesco:'angostura bitters'},
+    'rye-whiskey': {product:'Rye whiskey', tesco:'rye whiskey'},
+    'maraschino-cherries': {product:'Maraschino cherries', tesco:'maraschino cherries'},
+    'egg-white': {product:'Free-range eggs', tesco:'free range eggs'},
+    'tequila': {product:'Tequila', tesco:'tequila'},
+    'salt': {product:'Sea salt', tesco:'sea salt'},
+    'grapefruit-soda': {product:'Grapefruit soda', tesco:'grapefruit soda'},
+    'coffee-liqueur': {product:'Coffee liqueur', tesco:'coffee liqueur'},
+    'espresso': {product:'Ground coffee', tesco:'ground coffee'},
+    'coffee-beans': {product:'Coffee beans', tesco:'coffee beans'},
+    'aperol': {product:'Aperol', tesco:'aperol'},
+    'prosecco': {product:'Prosecco', tesco:'prosecco'},
+    'ginger-ale': {product:'Ginger ale', tesco:'ginger ale'},
+    'grenadine': {product:'Grenadine syrup', tesco:'grenadine syrup'},
+    'peach-schnapps': {product:'Peach schnapps', tesco:'peach schnapps'},
+    'orange-juice': {product:'Orange juice', tesco:'orange juice'},
+    'pineapple-juice': {product:'Pineapple juice', tesco:'pineapple juice'},
+    'lime-juice': {product:'Lime juice', tesco:'lime juice'},
+    'apple-juice': {product:'Apple juice', tesco:'apple juice'},
+    'lemonade': {product:'Lemonade', tesco:'lemonade'},
+    'red-wine': {product:'Red wine', tesco:'red wine'},
+    'pimms': {product:"Pimm's No.1", tesco:'pimms'},
+    'cucumber': {product:'Cucumber', tesco:'cucumber'},
+    'strawberries': {product:'Strawberries', tesco:'strawberries'}
+  };
+
+  // typical Tesco pack/bottle size in ml, used to estimate how many to buy for a batch
+  const BOTTLE_SIZE = {
+    'gin':700, 'vodka':700, 'white-rum':700, 'dark-rum':700, 'tequila':700,
+    'triple-sec':700, 'peach-schnapps':700, 'pimms':700, 'red-wine':750,
+    'orange-juice':1000, 'pineapple-juice':1000, 'cranberry-juice':1000, 'apple-juice':1000,
+    'lime-juice':250, 'grenadine':250, 'lemonade':2000, 'soda-water':1000, 'ginger-beer':1000
+  };
+
+  const CATEGORIES = [
+    {key:'all', label:'All'},
+    {key:'gin', label:'Gin'},
+    {key:'vodka', label:'Vodka'},
+    {key:'rum', label:'Rum'},
+    {key:'whiskey', label:'Whiskey'},
+    {key:'tequila', label:'Tequila'},
+    {key:'other', label:'Other'},
+    {key:'no-abv', label:'No-ABV'}
+  ];
+  const CAT_LABEL = Object.fromEntries(CATEGORIES.map(c=>[c.key,c.label]));
+
+  const GLASS_ICON = {
+    highball: '<path d="M7 5 L8.5 30 a2 2 0 0 0 2 1.8h5 a2 2 0 0 0 2-1.8L21 5 Z"/><line x1="7" y1="5" x2="21" y2="5"/>',
+    rocks: '<path d="M4 12 L6.5 29 a2 2 0 0 0 2 1.8h11 a2 2 0 0 0 2-1.8L24 12 Z"/><line x1="4" y1="12" x2="24" y2="12"/>',
+    coupe: '<path d="M5 6c0 6.5 4 11 9 11s9-4.5 9-11"/><line x1="14" y1="17" x2="14" y2="27"/><line x1="8" y1="29" x2="20" y2="29"/>',
+    martini: '<path d="M4 6 L24 6 L14 18 Z"/><line x1="14" y1="18" x2="14" y2="27"/><line x1="8" y1="29" x2="20" y2="29"/>',
+    mug: '<path d="M6 8h12v18a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V8Z"/><path d="M18 12h3a3 3 0 0 1 0 8h-3"/>',
+    wine: '<path d="M6 5c-0.5 8 2 13 8 13s8.5-5 8-13"/><line x1="14" y1="18" x2="14" y2="26"/><line x1="9" y1="28" x2="19" y2="28"/>',
+    jar: '<rect x="7" y="9" width="14" height="20" rx="2"/><line x1="7" y1="17" x2="21" y2="17"/><path d="M9.5 9V6.5a1 1 0 0 1 1-1h7a1 1 0 0 1 1 1V9"/><line x1="9" y1="6.5" x2="19" y2="6.5"/>'
+  };
+  function glassSVG(glass){
+    return '<svg width="24" height="28" viewBox="0 0 28 34" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'+(GLASS_ICON[glass]||GLASS_ICON.highball)+'</svg>';
+  }
+  const STAR_SVG = '<svg viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"><path d="M12 3.5l2.6 5.6 6 0.7-4.5 4.1 1.2 6-5.3-3-5.3 3 1.2-6-4.5-4.1 6-0.7z"/></svg>';
+  const CART_SVG = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.4"/><circle cx="18" cy="20" r="1.4"/><path d="M2 3h2l2.4 12.2a2 2 0 0 0 2 1.6h8.7a2 2 0 0 0 2-1.6L21 7H6"/></svg>';
+
+  function tescoUrl(key){
+    const q = (ING[key]||{}).tesco || key;
+    return 'https://www.tesco.com/groceries/en-GB/search?query='+encodeURIComponent(q);
+  }
+
+  // ---------- recipes ----------
+  const RECIPES = [
+    {id:'gin-tonic', name:'Gin & Tonic', category:'gin', glass:'highball', glassLabel:'Highball glass', abv:'Light',
+      ingredients:[{key:'gin',label:'Gin',qty:'50ml'},{key:'tonic-water',label:'Tonic water',qty:'150ml'},{key:'lime',label:'Lime wedge',qty:'1'}],
+      method:['Fill a highball glass with ice.','Pour in the gin.','Top with tonic water and stir gently.','Garnish with the lime wedge.'],
+      garnish:'Lime wedge'},
+
+    {id:'negroni', name:'Negroni', category:'gin', glass:'rocks', glassLabel:'Rocks glass', abv:'Strong',
+      ingredients:[{key:'gin',label:'Gin',qty:'25ml'},{key:'campari',label:'Campari',qty:'25ml'},{key:'sweet-vermouth',label:'Sweet vermouth',qty:'25ml'},{key:'orange',label:'Orange peel',qty:'1 strip'}],
+      method:['Fill a rocks glass with ice.','Pour the gin, Campari and sweet vermouth over the ice.','Stir for 20–30 seconds.','Express the orange peel over the drink and drop it in.'],
+      garnish:'Orange peel'},
+
+    {id:'tom-collins', name:'Tom Collins', category:'gin', glass:'highball', glassLabel:'Highball glass', abv:'Medium',
+      ingredients:[{key:'gin',label:'Gin',qty:'50ml'},{key:'lemon',label:'Fresh lemon juice',qty:'25ml'},{key:'sugar',label:'Sugar syrup',qty:'15ml'},{key:'soda-water',label:'Soda water',qty:'top up'}],
+      method:['Add gin, lemon juice and sugar syrup to a shaker with ice.','Shake and strain into an ice-filled highball glass.','Top with soda water and stir once.','Garnish with a lemon wheel.'],
+      garnish:'Lemon wheel'},
+
+    {id:'gimlet', name:'Gimlet', category:'gin', glass:'coupe', glassLabel:'Coupe glass', abv:'Medium',
+      ingredients:[{key:'gin',label:'Gin',qty:'50ml'},{key:'lime-cordial',label:'Lime cordial',qty:'20ml'}],
+      method:['Add gin and lime cordial to a shaker with ice.','Shake well until chilled.','Strain into a chilled coupe glass.'],
+      garnish:'Lime wheel (optional)'},
+
+    {id:'vodka-martini', name:'Vodka Martini', category:'vodka', glass:'martini', glassLabel:'Martini glass', abv:'Strong',
+      ingredients:[{key:'vodka',label:'Vodka',qty:'60ml'},{key:'dry-vermouth',label:'Dry vermouth',qty:'10ml'},{key:'cocktail-olives',label:'Cocktail olives',qty:'1–2'}],
+      method:['Add vodka and dry vermouth to a mixing glass with ice.','Stir for 20–30 seconds until well chilled.','Strain into a chilled martini glass.','Garnish with olives.'],
+      garnish:'Cocktail olives'},
+
+    {id:'moscow-mule', name:'Moscow Mule', category:'vodka', glass:'mug', glassLabel:'Copper mug', abv:'Light–Medium',
+      ingredients:[{key:'vodka',label:'Vodka',qty:'50ml'},{key:'ginger-beer',label:'Ginger beer',qty:'120ml'},{key:'lime',label:'Fresh lime juice',qty:'15ml'}],
+      method:['Fill a copper mug (or highball) with ice.','Add vodka and lime juice.','Top with ginger beer and stir gently.','Garnish with a lime wheel.'],
+      garnish:'Lime wheel'},
+
+    {id:'cosmopolitan', name:'Cosmopolitan', category:'vodka', glass:'martini', glassLabel:'Martini glass', abv:'Medium',
+      ingredients:[{key:'vodka',label:'Vodka',qty:'40ml'},{key:'triple-sec',label:'Triple sec',qty:'15ml'},{key:'cranberry-juice',label:'Cranberry juice',qty:'30ml'},{key:'lime',label:'Fresh lime juice',qty:'15ml'}],
+      method:['Add all ingredients to a shaker with ice.','Shake hard until well chilled.','Double-strain into a chilled martini glass.','Garnish with an orange twist.'],
+      garnish:'Orange twist'},
+
+    {id:'sex-on-the-beach', name:'Sex on the Beach', category:'vodka', glass:'highball', glassLabel:'Highball glass', abv:'Medium',
+      ingredients:[{key:'vodka',label:'Vodka',qty:'50ml'},{key:'peach-schnapps',label:'Peach schnapps',qty:'25ml'},{key:'orange-juice',label:'Orange juice',qty:'45ml'},{key:'cranberry-juice',label:'Cranberry juice',qty:'45ml'}],
+      method:['Fill a highball glass with ice.','Add the vodka and peach schnapps.','Top with orange juice and cranberry juice.','Stir gently.','Garnish with an orange slice and a cherry.'],
+      garnish:'Orange slice & maraschino cherry'},
+
+    {id:'mojito', name:'Mojito', category:'rum', glass:'highball', glassLabel:'Highball glass', abv:'Light–Medium',
+      ingredients:[{key:'white-rum',label:'White rum',qty:'50ml'},{key:'lime',label:'Fresh lime juice',qty:'25ml'},{key:'mint',label:'Fresh mint leaves',qty:'8'},{key:'sugar',label:'Sugar syrup',qty:'15ml'},{key:'soda-water',label:'Soda water',qty:'top up'}],
+      method:['Gently muddle the mint, lime juice and sugar syrup in a highball glass.','Fill the glass with crushed ice and add the rum.','Top with soda water and stir.','Garnish with a mint sprig.'],
+      garnish:'Mint sprig'},
+
+    {id:'daiquiri', name:'Daiquiri', category:'rum', glass:'coupe', glassLabel:'Coupe glass', abv:'Medium',
+      ingredients:[{key:'white-rum',label:'White rum',qty:'50ml'},{key:'lime',label:'Fresh lime juice',qty:'25ml'},{key:'sugar',label:'Sugar syrup',qty:'15ml'}],
+      method:['Add all ingredients to a shaker with ice.','Shake hard until well chilled.','Double-strain into a chilled coupe glass.'],
+      garnish:'Lime wheel (optional)'},
+
+    {id:'dark-stormy', name:"Dark 'n' Stormy", category:'rum', glass:'highball', glassLabel:'Highball glass', abv:'Medium',
+      ingredients:[{key:'dark-rum',label:'Dark rum',qty:'50ml'},{key:'ginger-beer',label:'Ginger beer',qty:'120ml'},{key:'lime',label:'Lime wedge',qty:'1'}],
+      method:['Fill a highball glass with ice.','Add the ginger beer.','Float the dark rum on top.','Garnish with a lime wedge.'],
+      garnish:'Lime wedge'},
+
+    {id:'old-fashioned', name:'Old Fashioned', category:'whiskey', glass:'rocks', glassLabel:'Rocks glass', abv:'Strong',
+      ingredients:[{key:'bourbon',label:'Bourbon whiskey',qty:'50ml'},{key:'sugar-cubes',label:'Sugar cube',qty:'1'},{key:'angostura-bitters',label:'Angostura bitters',qty:'2–3 dashes'},{key:'orange',label:'Orange peel',qty:'1 strip'}],
+      method:['Muddle the sugar cube with the bitters and a splash of water in a rocks glass.','Add the bourbon and a large ice cube.','Stir until chilled.','Express the orange peel over the drink and drop it in.'],
+      garnish:'Orange peel'},
+
+    {id:'whiskey-sour', name:'Whiskey Sour', category:'whiskey', glass:'rocks', glassLabel:'Rocks glass', abv:'Medium',
+      ingredients:[{key:'bourbon',label:'Bourbon whiskey',qty:'50ml'},{key:'lemon',label:'Fresh lemon juice',qty:'25ml'},{key:'sugar',label:'Sugar syrup',qty:'15ml'},{key:'egg-white',label:'Egg white (optional)',qty:'15ml'}],
+      method:['Add all ingredients to a shaker and dry-shake (no ice) for 15 seconds if using egg white.','Add ice and shake hard again.','Strain into a rocks glass over fresh ice.','Garnish with an orange slice.'],
+      garnish:'Orange slice'},
+
+    {id:'manhattan', name:'Manhattan', category:'whiskey', glass:'coupe', glassLabel:'Coupe glass', abv:'Strong',
+      ingredients:[{key:'rye-whiskey',label:'Rye whiskey',qty:'50ml'},{key:'sweet-vermouth',label:'Sweet vermouth',qty:'20ml'},{key:'angostura-bitters',label:'Angostura bitters',qty:'2 dashes'},{key:'maraschino-cherries',label:'Maraschino cherry',qty:'1'}],
+      method:['Add whiskey, vermouth and bitters to a mixing glass with ice.','Stir for 20–30 seconds until well chilled.','Strain into a chilled coupe glass.','Garnish with a cherry.'],
+      garnish:'Maraschino cherry'},
+
+    {id:'margarita', name:'Margarita', category:'tequila', glass:'rocks', glassLabel:'Salt-rimmed rocks glass', abv:'Medium',
+      ingredients:[{key:'tequila',label:'Tequila',qty:'50ml'},{key:'triple-sec',label:'Triple sec',qty:'20ml'},{key:'lime',label:'Fresh lime juice',qty:'25ml'},{key:'salt',label:'Salt, for the rim',qty:'pinch'}],
+      method:['Run a lime wedge around the rim of the glass and dip in salt.','Add tequila, triple sec and lime juice to a shaker with ice.','Shake hard and strain into the glass over fresh ice.'],
+      garnish:'Lime wheel'},
+
+    {id:'paloma', name:'Paloma', category:'tequila', glass:'highball', glassLabel:'Highball glass', abv:'Light–Medium',
+      ingredients:[{key:'tequila',label:'Tequila',qty:'50ml'},{key:'grapefruit-soda',label:'Grapefruit soda',qty:'120ml'},{key:'lime',label:'Lime wedge',qty:'1'},{key:'salt',label:'Salt, for the rim',qty:'pinch'}],
+      method:['Salt the rim of a highball glass and fill with ice.','Add the tequila.','Top with grapefruit soda and stir gently.','Garnish with a lime wedge.'],
+      garnish:'Lime wedge'},
+
+    {id:'espresso-martini', name:'Espresso Martini', category:'other', glass:'martini', glassLabel:'Martini glass', abv:'Medium',
+      ingredients:[{key:'vodka',label:'Vodka',qty:'50ml'},{key:'coffee-liqueur',label:'Coffee liqueur',qty:'25ml'},{key:'espresso',label:'Fresh espresso, cooled',qty:'30ml'},{key:'sugar',label:'Sugar syrup (optional)',qty:'10ml'},{key:'coffee-beans',label:'Coffee beans',qty:'3'}],
+      method:['Add all liquid ingredients to a shaker with ice.','Shake hard until well chilled and frothy.','Double-strain into a chilled martini glass.','Garnish with three coffee beans.'],
+      garnish:'Three coffee beans'},
+
+    {id:'aperol-spritz', name:'Aperol Spritz', category:'other', glass:'wine', glassLabel:'Wine glass', abv:'Light',
+      ingredients:[{key:'aperol',label:'Aperol',qty:'60ml'},{key:'prosecco',label:'Prosecco',qty:'90ml'},{key:'soda-water',label:'Soda water',qty:'splash'},{key:'orange',label:'Orange slice',qty:'1'}],
+      method:['Fill a large wine glass with ice.','Add the Aperol, then the Prosecco.','Top with a splash of soda water and stir gently.','Garnish with an orange slice.'],
+      garnish:'Orange slice'},
+
+    {id:'virgin-mojito', name:'Virgin Mojito', category:'no-abv', glass:'highball', glassLabel:'Highball glass', abv:'0%',
+      ingredients:[{key:'lime',label:'Fresh lime juice',qty:'25ml'},{key:'mint',label:'Fresh mint leaves',qty:'8'},{key:'sugar',label:'Sugar syrup',qty:'15ml'},{key:'soda-water',label:'Soda water',qty:'top up'}],
+      method:['Gently muddle the mint, lime juice and sugar syrup in a highball glass.','Fill with crushed ice.','Top with soda water and stir.','Garnish with a mint sprig.'],
+      garnish:'Mint sprig'},
+
+    {id:'shirley-temple', name:'Shirley Temple', category:'no-abv', glass:'highball', glassLabel:'Highball glass', abv:'0%',
+      ingredients:[{key:'ginger-ale',label:'Ginger ale',qty:'150ml'},{key:'grenadine',label:'Grenadine syrup',qty:'15ml'},{key:'maraschino-cherries',label:'Maraschino cherry',qty:'1'}],
+      method:['Fill a highball glass with ice.','Pour in the ginger ale.','Slowly add the grenadine so it settles at the bottom.','Garnish with a cherry.'],
+      garnish:'Maraschino cherry'},
+
+    {id:'rum-punch-jar', name:'Rum Punch', category:'rum', glass:'jar', abv:'Medium', mode:'party', totalParts:20,
+      ingredients:[
+        {key:'dark-rum',label:'Dark rum',parts:4},
+        {key:'white-rum',label:'White rum',parts:2},
+        {key:'orange-juice',label:'Orange juice',parts:6},
+        {key:'pineapple-juice',label:'Pineapple juice',parts:5},
+        {key:'lime-juice',label:'Lime juice',parts:2},
+        {key:'grenadine',label:'Grenadine syrup',parts:1}
+      ],
+      method:['Add all the liquids to your jar in the order above.','Stir well to combine.','Chill for at least 2 hours, or add a scoop of ice if serving straight away.','Ladle over ice into cups to serve.'],
+      garnish:'Orange wheels and maraschino cherries'},
+
+    {id:'sangria-jar', name:'Fruity Sangria', category:'other', glass:'jar', abv:'Medium', mode:'party', totalParts:20,
+      ingredients:[
+        {key:'red-wine',label:'Red wine',parts:11},
+        {key:'triple-sec',label:'Orange liqueur (triple sec)',parts:2},
+        {key:'apple-juice',label:'Apple juice',parts:4},
+        {key:'soda-water',label:'Soda water',parts:3},
+        {key:'orange',label:'Orange, sliced',type:'count',per5L:1,unit:'orange, sliced'},
+        {key:'lemon',label:'Lemon, sliced',type:'count',per5L:1,unit:'lemon, sliced'}
+      ],
+      method:['Slice the orange and lemon and add to the jar.','Pour in the red wine, orange liqueur and apple juice.','Stir and chill for at least 2 hours so the fruit infuses.','Top with soda water just before serving, over ice.'],
+      garnish:'Extra citrus slices and a few whole berries if you have them'},
+
+    {id:'jungle-juice-jar', name:'Jungle Juice', category:'vodka', glass:'jar', abv:'Medium', mode:'party', totalParts:20,
+      ingredients:[
+        {key:'vodka',label:'Vodka',parts:4},
+        {key:'white-rum',label:'White rum',parts:2},
+        {key:'triple-sec',label:'Orange liqueur (triple sec)',parts:2},
+        {key:'orange-juice',label:'Orange juice',parts:4},
+        {key:'pineapple-juice',label:'Pineapple juice',parts:4},
+        {key:'cranberry-juice',label:'Cranberry juice',parts:2},
+        {key:'lemonade',label:'Lemonade',parts:2}
+      ],
+      method:['Add all the liquids to your jar in the order above.','Stir well to combine.','Chill for at least 2 hours.','Serve over plenty of ice.'],
+      garnish:'Sliced citrus'},
+
+    {id:'sex-on-the-beach-jar', name:'Sex on the Beach Party Jug', category:'vodka', glass:'jar', abv:'Medium', mode:'party', totalParts:20,
+      ingredients:[
+        {key:'vodka',label:'Vodka',parts:6},
+        {key:'peach-schnapps',label:'Peach schnapps',parts:3},
+        {key:'orange-juice',label:'Orange juice',parts:6},
+        {key:'cranberry-juice',label:'Cranberry juice',parts:5}
+      ],
+      method:['Add all the liquids to your jar in the order above.','Stir well to combine.','Chill for at least 2 hours.','Serve over ice.'],
+      garnish:'Orange slices and cherries'},
+
+    {id:'pimms-jar', name:"Pimm's Party Jug", category:'other', glass:'jar', abv:'Light', mode:'party', totalParts:20,
+      ingredients:[
+        {key:'pimms',label:"Pimm's No.1",parts:5},
+        {key:'lemonade',label:'Lemonade',parts:15},
+        {key:'cucumber',label:'Cucumber, sliced into ribbons',type:'count',per5L:1,unit:'cucumber'},
+        {key:'strawberries',label:'Strawberries, halved',type:'count',per5L:150,unit:'g'},
+        {key:'mint',label:'Fresh mint',type:'count',per5L:1,unit:'small bunch'}
+      ],
+      method:['Slice the cucumber, halve the strawberries and add to the jar with the mint.','Pour in the Pimm\u2019s.','Top with lemonade and stir gently.','Chill for at least an hour and serve over ice.'],
+      garnish:'Extra mint sprigs and cucumber ribbons'},
+
+    {id:'mojito-jar', name:'Mojito Jar', category:'rum', glass:'jar', abv:'Medium', mode:'party', totalParts:20,
+      ingredients:[
+        {key:'white-rum',label:'White rum',parts:6},
+        {key:'lime-juice',label:'Lime juice',parts:4},
+        {key:'sugar',label:'Sugar syrup',parts:2},
+        {key:'soda-water',label:'Soda water',parts:8},
+        {key:'mint',label:'Fresh mint',type:'count',per5L:2,unit:'bunches'}
+      ],
+      method:['Muddle the mint gently in the bottom of the jar.','Add the rum, lime juice and sugar syrup.','Stir well, then chill for at least an hour.','Top with soda water just before serving, over crushed ice.'],
+      garnish:'Plenty of mint sprigs and lime wedges'},
+
+    {id:'fruit-punch-jar', name:'Virgin Fruit Punch', category:'no-abv', glass:'jar', abv:'0%', mode:'party', totalParts:20,
+      ingredients:[
+        {key:'orange-juice',label:'Orange juice',parts:6},
+        {key:'pineapple-juice',label:'Pineapple juice',parts:6},
+        {key:'cranberry-juice',label:'Cranberry juice',parts:5},
+        {key:'lemonade',label:'Lemonade',parts:3}
+      ],
+      method:['Combine all the juices and lemonade in the jar.','Stir well.','Chill for at least an hour.','Serve over ice.'],
+      garnish:'Orange and lime wheels, maraschino cherries'}
+  ];
+
+  // ---------- storage (window.storage when available, else localStorage, never throws) ----------
+  async function storageGet(key){
+    try{
+      if (window.storage){
+        const r = await window.storage.get(key, false);
+        return r ? JSON.parse(r.value) : null;
+      }
+    }catch(e){ /* fall through */ }
+    try{
+      const v = localStorage.getItem(key);
+      return v ? JSON.parse(v) : null;
+    }catch(e){ return null; }
+  }
+  async function storageSet(key, value){
+    try{
+      if (window.storage){
+        await window.storage.set(key, JSON.stringify(value), false);
+        return;
+      }
+    }catch(e){ /* fall through */ }
+    try{ localStorage.setItem(key, JSON.stringify(value)); }catch(e){ /* ignore */ }
+  }
+
+  let pantry = new Set();
+  let favorites = new Set();
+  let state = {search:'', category:'all', readyOnly:false, favOnly:false, mode:'single', jarLiters:5};
+  let activeTab = 'bar';
+  let copyTimer = null;
+
+  // ---------- helpers ----------
+  function getMissing(recipe){
+    const seen = new Set();
+    const missing = [];
+    recipe.ingredients.forEach(ing=>{
+      if (seen.has(ing.key)) return;
+      seen.add(ing.key);
+      if (!pantry.has(ing.key)) missing.push(ing.key);
+    });
+    return missing;
+  }
+  // Scales one party-jar ingredient to the selected jar size.
+  // Volume ingredients are a share ("parts") of the jar's total liquid volume.
+  // Count ingredients (fruit, mint, etc.) scale from an amount-per-5-litres.
+  function scaledAmount(recipe, ing, jarLiters){
+    if (ing.type==='count'){
+      const amount = ing.per5L * (jarLiters/5);
+      return {kind:'count', amount, unit:ing.unit};
+    }
+    const ml = (ing.parts / recipe.totalParts) * jarLiters * 1000;
+    return {kind:'volume', amount: ml};
+  }
+  function formatAmount(key, amt){
+    if (amt.kind==='count'){
+      const n = Math.ceil(amt.amount - 1e-9);
+      return `${n} ${amt.unit}`;
+    }
+    const ml = Math.round(amt.amount);
+    const bottleSize = BOTTLE_SIZE[key];
+    let bottleNote = '';
+    if (bottleSize){
+      const n = Math.ceil(ml / bottleSize - 1e-9);
+      const sizeLabel = bottleSize>=1000 ? (bottleSize/1000)+'l' : bottleSize+'ml';
+      bottleNote = ` (~${n} x ${sizeLabel})`;
+    }
+    return `${ml}ml${bottleNote}`;
+  }
+  // Ingredient rows ready for display: fixed qty for single-serve recipes,
+  // scaled-to-jar-size amounts for party recipes.
+  function displayIngredients(r){
+    if (r.mode==='party'){
+      return r.ingredients.map(ing=>({
+        key: ing.key,
+        label: ing.label,
+        qty: formatAmount(ing.key, scaledAmount(r, ing, state.jarLiters))
+      }));
+    }
+    return r.ingredients.map(ing=>({key:ing.key, label:ing.label, qty:ing.qty}));
+  }
+  function recipeMode(r){ return r.mode || 'single'; }
+  function filteredRecipes(){
+    const q = state.search.trim().toLowerCase();
+    return RECIPES.filter(r=>{
+      if (recipeMode(r)!==state.mode) return false;
+      if (state.category!=='all' && r.category!==state.category) return false;
+      if (state.favOnly && !favorites.has(r.id)) return false;
+      if (state.readyOnly && getMissing(r).length>0) return false;
+      if (q){
+        const inName = r.name.toLowerCase().includes(q);
+        const inIng = r.ingredients.some(i=>i.label.toLowerCase().includes(q));
+        if (!inName && !inIng) return false;
+      }
+      return true;
+    });
+  }
+  function uniqueIngredients(){
+    const map = new Map();
+    RECIPES.forEach(r=>r.ingredients.forEach(ing=>{
+      if (!map.has(ing.key)) map.set(ing.key, (ING[ing.key]||{}).product || ing.label);
+    }));
+    return [...map.entries()].sort((a,b)=>a[1].localeCompare(b[1]));
+  }
+
+  // ---------- rendering ----------
+  function renderModeChips(){
+    document.querySelectorAll('.mode-chip').forEach(btn=>{
+      const active = btn.dataset.mode===state.mode;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-pressed', active);
+    });
+    document.getElementById('jarChips').style.display = state.mode==='party' ? 'flex' : 'none';
+  }
+  function renderChips(){
+    const el = document.getElementById('categoryChips');
+    const present = new Set(RECIPES.filter(r=>recipeMode(r)===state.mode).map(r=>r.category));
+    const visible = CATEGORIES.filter(c=>c.key==='all' || present.has(c.key));
+    el.innerHTML = visible.map(c=>
+      `<button class="chip${state.category===c.key?' active':''}" data-cat="${c.key}">${c.label}</button>`
+    ).join('');
+    el.querySelectorAll('.chip').forEach(btn=>{
+      btn.addEventListener('click', ()=>{ state.category = btn.dataset.cat; render(); });
+    });
+  }
+
+  function cardHTML(r, openIds){
+    const missing = getMissing(r);
+    const isFav = favorites.has(r.id);
+    const list = filteredRecipes();
+    const shouldOpen = openIds.has(r.id) || list.length<=3;
+    const isParty = r.mode==='party';
+    const glassLabel = isParty ? `${state.jarLiters} litre jar` : r.glassLabel;
+    const servingsTag = isParty ? `<span class="tag">≈${Math.round(state.jarLiters*1000/250)} servings</span>` : '';
+    const ingredientsHTML = displayIngredients(r).map(ing=>`
+      <li class="${pantry.has(ing.key)?'have':''}">
+        <span class="have-dot" aria-hidden="true"></span>
+        <span class="ing-name">${ing.label} <span class="ing-qty">— ${ing.qty}</span></span>
+        <a class="shop-link" href="${tescoUrl(ing.key)}" target="_blank" rel="noopener">${CART_SVG}<span>Shop</span></a>
+      </li>`).join('');
+    const methodHTML = r.method.map(step=>`<li>${step}</li>`).join('');
+    return `
+    <article class="ticket" data-id="${r.id}">
+      <button class="fav-btn" data-id="${r.id}" aria-pressed="${isFav}" aria-label="${isFav?'Remove from favourites':'Add to favourites'}">${STAR_SVG}</button>
+      <details ${shouldOpen?'open':''}>
+        <summary>
+          <span class="glass-icon" aria-hidden="true">${glassSVG(r.glass)}</span>
+          <span class="ticket-title">
+            <h3>${r.name}</h3>
+            <span class="ticket-tags">
+              <span class="tag cat-${r.category}">${CAT_LABEL[r.category]}</span>
+              <span class="tag">${glassLabel}</span>
+              <span class="tag">${r.abv}</span>
+              ${servingsTag}
+            </span>
+          </span>
+          <span class="ready-badge ${missing.length?'missing':'ready'}">${missing.length?('Missing '+missing.length):'Ready to make'}</span>
+        </summary>
+        <div class="ticket-body">
+          <ul class="ingredients">${ingredientsHTML}</ul>
+          <ol class="method">${methodHTML}</ol>
+          <p class="garnish">Garnish: ${r.garnish}</p>
+        </div>
+      </details>
+    </article>`;
+  }
+
+  function renderRecipes(){
+    const container = document.getElementById('recipeList');
+    const openIds = new Set();
+    container.querySelectorAll('details[open]').forEach(d=>{
+      const card = d.closest('.ticket');
+      if (card) openIds.add(card.dataset.id);
+    });
+    const list = filteredRecipes();
+    if (list.length===0){
+      container.innerHTML = `<div class="empty-state">No drinks match that search or filter yet.</div>`;
+      return;
+    }
+    container.innerHTML = list.map(r=>cardHTML(r, openIds)).join('');
+    container.querySelectorAll('.fav-btn').forEach(btn=>{
+      btn.addEventListener('click', async ()=>{
+        const id = btn.dataset.id;
+        if (favorites.has(id)) favorites.delete(id); else favorites.add(id);
+        await storageSet('hb_favs', [...favorites]);
+        render();
+      });
+    });
+  }
+
+  function renderPantry(){
+    const el = document.getElementById('pantryList');
+    el.innerHTML = uniqueIngredients().map(([key,product])=>`
+      <li>
+        <label>
+          <input type="checkbox" data-key="${key}" ${pantry.has(key)?'checked':''}>
+          <span>${product}</span>
+        </label>
+      </li>`).join('');
+    el.querySelectorAll('input[type="checkbox"]').forEach(cb=>{
+      cb.addEventListener('change', async ()=>{
+        const key = cb.dataset.key;
+        if (cb.checked) pantry.add(key); else pantry.delete(key);
+        await storageSet('hb_pantry', [...pantry]);
+        renderRecipes();
+        renderShoppingList();
+      });
+    });
+  }
+
+  function renderShoppingList(){
+    const modeFavorites = RECIPES.filter(r=>favorites.has(r.id) && recipeMode(r)===state.mode);
+    const sourceRecipes = modeFavorites.length>0 ? modeFavorites : filteredRecipes();
+    const sourceLabel = modeFavorites.length>0
+      ? `Based on your ${modeFavorites.length} favourite${modeFavorites.length===1?'':'s'}.`
+      : `Based on the ${sourceRecipes.length} drink${sourceRecipes.length===1?'':'s'} currently shown. Star a few to build a list just for them.`;
+    document.getElementById('listSource').textContent = sourceLabel;
+
+    let rows; // [key, product, qtyText|null]
+    if (state.mode==='party'){
+      const totals = new Map();
+      sourceRecipes.forEach(r=>{
+        const seen = new Set();
+        r.ingredients.forEach(ing=>{
+          if (seen.has(ing.key)) return;
+          seen.add(ing.key);
+          if (pantry.has(ing.key)) return;
+          const amt = scaledAmount(r, ing, state.jarLiters);
+          const product = (ING[ing.key]||{}).product || ing.label;
+          if (!totals.has(ing.key)) totals.set(ing.key, {product, kind:amt.kind, unit:amt.unit, amount:amt.amount});
+          else totals.get(ing.key).amount += amt.amount;
+        });
+      });
+      rows = [...totals.entries()].map(([key,t])=>
+        [key, t.product, formatAmount(key, {kind:t.kind, amount:t.amount, unit:t.unit})]
+      ).sort((a,b)=>a[1].localeCompare(b[1]));
+    } else {
+      const missingMap = new Map();
+      sourceRecipes.forEach(r=>getMissing(r).forEach(key=>{
+        if (!missingMap.has(key)) missingMap.set(key, (ING[key]||{}).product || key);
+      }));
+      rows = [...missingMap.entries()].map(([key,product])=>[key,product,null]).sort((a,b)=>a[1].localeCompare(b[1]));
+    }
+
+    const el = document.getElementById('shoppingList');
+    if (rows.length===0){
+      el.innerHTML = `<li style="border:none;">Nothing missing — you're ready to shake.</li>`;
+    } else {
+      el.innerHTML = rows.map(([key,product,qty])=>`
+        <li>
+          <span>${product}${qty?` <span class="ing-qty">— ${qty}</span>`:''}</span>
+          <a class="shop-link" href="${tescoUrl(key)}" target="_blank" rel="noopener">${CART_SVG}<span>Shop</span></a>
+        </li>`).join('');
+    }
+    el.dataset.items = JSON.stringify(rows.map(r=>r[2]?`${r[1]} — ${r[2]}`:r[1]));
+  }
+
+  function render(){
+    renderModeChips();
+    renderChips();
+    renderRecipes();
+    renderPantry();
+    renderShoppingList();
+  }
+
+  // ---------- events ----------
+  document.getElementById('searchInput').addEventListener('input', (e)=>{
+    state.search = e.target.value;
+    renderRecipes();
+    renderShoppingList();
+  });
+  document.querySelectorAll('.mode-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      if (btn.dataset.mode===state.mode) return;
+      state.mode = btn.dataset.mode;
+      state.category = 'all';
+      render();
+    });
+  });
+  document.querySelectorAll('.jar-chip').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      state.jarLiters = parseInt(btn.dataset.jar, 10);
+      document.querySelectorAll('.jar-chip').forEach(b=>{
+        const active = b===btn;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-pressed', active);
+      });
+      renderRecipes();
+      renderShoppingList();
+    });
+  });
+  document.getElementById('readyChip').addEventListener('click', function(){
+    state.readyOnly = !state.readyOnly;
+    this.classList.toggle('active', state.readyOnly);
+    this.setAttribute('aria-pressed', state.readyOnly);
+    renderRecipes();
+    renderShoppingList();
+  });
+  document.getElementById('favChip').addEventListener('click', function(){
+    state.favOnly = !state.favOnly;
+    this.classList.toggle('active', state.favOnly);
+    this.setAttribute('aria-pressed', state.favOnly);
+    renderRecipes();
+  });
+  document.getElementById('resetPantry').addEventListener('click', async ()=>{
+    pantry = new Set();
+    await storageSet('hb_pantry', []);
+    renderPantry();
+    renderRecipes();
+    renderShoppingList();
+  });
+  document.getElementById('tabBtnBar').addEventListener('click', ()=>switchTab('bar'));
+  document.getElementById('tabBtnList').addEventListener('click', ()=>switchTab('list'));
+  function switchTab(tab){
+    activeTab = tab;
+    document.getElementById('tabBtnBar').classList.toggle('active', tab==='bar');
+    document.getElementById('tabBtnList').classList.toggle('active', tab==='list');
+    document.getElementById('barPanel').classList.toggle('hidden', tab!=='bar');
+    document.getElementById('listPanel').classList.toggle('hidden', tab!=='list');
+  }
+  document.getElementById('copyListBtn').addEventListener('click', async (e)=>{
+    const items = JSON.parse(document.getElementById('shoppingList').dataset.items || '[]');
+    const text = items.join('\n');
+    const btn = e.currentTarget;
+    try{
+      await navigator.clipboard.writeText(text);
+      btn.textContent = 'Copied!';
+    }catch(err){
+      btn.textContent = 'Could not copy';
+    }
+    clearTimeout(copyTimer);
+    copyTimer = setTimeout(()=>{ btn.textContent = 'Copy list'; }, 1500);
+  });
+
+  // ---------- init ----------
+  render();
+  (async function loadState(){
+    const p = await storageGet('hb_pantry');
+    const f = await storageGet('hb_favs');
+    pantry = new Set(p || []);
+    favorites = new Set(f || []);
+    render();
+  })();
+
+})();
+</script>
+</body>
+</html>
