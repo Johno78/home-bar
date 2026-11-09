@@ -382,13 +382,14 @@
     'red-wine': {product:'Red wine', tesco:'red wine'},
     'pimms': {product:"Pimm's No.1", tesco:'pimms'},
     'cucumber': {product:'Cucumber', tesco:'cucumber'},
-    'strawberries': {product:'Strawberries', tesco:'strawberries'}
+    'strawberries': {product:'Strawberries', tesco:'strawberries'},
+    'blue-curacao': {product:'Blue curaçao', tesco:'blue curacao'}
   };
 
   // typical Tesco pack/bottle size in ml, used to estimate how many to buy for a batch
   const BOTTLE_SIZE = {
     'gin':700, 'vodka':700, 'white-rum':700, 'dark-rum':700, 'tequila':700,
-    'triple-sec':700, 'peach-schnapps':700, 'pimms':700, 'red-wine':750,
+    'triple-sec':700, 'peach-schnapps':700, 'blue-curacao':700, 'pimms':700, 'red-wine':750,
     'orange-juice':1000, 'pineapple-juice':1000, 'cranberry-juice':1000, 'apple-juice':1000,
     'lime-juice':250, 'grenadine':250, 'lemonade':2000, 'soda-water':1000, 'ginger-beer':1000
   };
@@ -466,6 +467,11 @@
       ingredients:[{key:'vodka',label:'Vodka',qty:'50ml'},{key:'peach-schnapps',label:'Peach schnapps',qty:'25ml'},{key:'orange-juice',label:'Orange juice',qty:'45ml'},{key:'cranberry-juice',label:'Cranberry juice',qty:'45ml'}],
       method:['Fill a highball glass with ice.','Add the vodka and peach schnapps.','Top with orange juice and cranberry juice.','Stir gently.','Garnish with an orange slice and a cherry.'],
       garnish:'Orange slice & maraschino cherry'},
+
+    {id:'purple-rain', name:'Purple Rain', category:'vodka', glass:'highball', glassLabel:'Highball glass', abv:'Medium',
+      ingredients:[{key:'vodka',label:'Vodka',qty:'40ml'},{key:'blue-curacao',label:'Blue curaçao',qty:'20ml'},{key:'cranberry-juice',label:'Cranberry juice',qty:'60ml'},{key:'lemonade',label:'Lemonade',qty:'60ml'}],
+      method:['Fill a highball glass with ice.','Add the vodka and blue curaçao.','Pour in the cranberry juice and the blue and red will swirl into purple.','Top with lemonade and stir gently.','Garnish with a lime wheel.'],
+      garnish:'Lime wheel'},
 
     {id:'mojito', name:'Mojito', category:'rum', glass:'highball', glassLabel:'Highball glass', abv:'Light–Medium',
       ingredients:[{key:'white-rum',label:'White rum',qty:'50ml'},{key:'lime',label:'Fresh lime juice',qty:'25ml'},{key:'mint',label:'Fresh mint leaves',qty:'8'},{key:'sugar',label:'Sugar syrup',qty:'15ml'},{key:'soda-water',label:'Soda water',qty:'top up'}],
@@ -573,6 +579,16 @@
       ],
       method:['Add all the liquids to your jar in the order above.','Stir well to combine.','Chill for at least 2 hours.','Serve over ice.'],
       garnish:'Orange slices and cherries'},
+
+    {id:'purple-rain-jar', name:'Purple Rain Party Jug', category:'vodka', glass:'jar', abv:'Medium', mode:'party', totalParts:20,
+      ingredients:[
+        {key:'vodka',label:'Vodka',parts:4},
+        {key:'blue-curacao',label:'Blue curaçao',parts:2},
+        {key:'cranberry-juice',label:'Cranberry juice',parts:7},
+        {key:'lemonade',label:'Lemonade',parts:7}
+      ],
+      method:['Add the vodka and blue curaçao to your jar.','Pour in the cranberry juice and stir until it turns purple.','Chill for at least 2 hours.','Top with lemonade just before serving, over plenty of ice.'],
+      garnish:'Lime wheels'},
 
     {id:'pimms-jar', name:"Pimm's Party Jug", category:'other', glass:'jar', abv:'Light', mode:'party', totalParts:20,
       ingredients:[
